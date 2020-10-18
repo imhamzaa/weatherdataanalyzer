@@ -146,7 +146,8 @@ class WeatherMan:
             high_temp_line = ChartColor.RED.value + self._chart_line_style * high_temp_point
             low_temp_line = ChartColor.BLUE.value + self._chart_line_style * low_temp_point
 
-            print(f'{ChartColor.PINK.value}{day} {low_temp_line}{high_temp_line} {ChartColor.PINK.value}{low_temp_value}{self._temp_unit}-{high_temp_value}{self._temp_unit}')
+            print(
+                f'{ChartColor.PINK.value}{day} {low_temp_line}{high_temp_line} {ChartColor.PINK.value}{low_temp_value}{self._temp_unit}-{high_temp_value}{self._temp_unit}')
 
     def draw_two_line_chart(self, temperature_readings):
 
@@ -162,8 +163,10 @@ class WeatherMan:
             high_temp_line = ChartColor.RED.value + self._chart_line_style * high_temp_point
             low_temp_line = ChartColor.BLUE.value + self._chart_line_style * low_temp_point
 
-            print(f'{ChartColor.PINK.value}{day} {high_temp_line}{ChartColor.PINK.value}{high_temp_value}{self._temp_unit}')
-            print(f'{ChartColor.PINK.value}{day} {low_temp_line}{ChartColor.PINK.value}{low_temp_value}{self._temp_unit}')
+            print(
+                f'{ChartColor.PINK.value}{day} {high_temp_line}{ChartColor.PINK.value}{high_temp_value}{self._temp_unit}')
+            print(
+                f'{ChartColor.PINK.value}{day} {low_temp_line}{ChartColor.PINK.value}{low_temp_value}{self._temp_unit}')
 
     def populate_year_report(self, weather_man_results):
 
@@ -172,10 +175,14 @@ class WeatherMan:
         fastest_speed = weather_man_results['FastestWindSpeed']
         slowest_speed = weather_man_results['SlowestWindSpeed']
 
-        print(f'Highest temperature: {max_temp.max_temp}{self._temp_unit} on {parser.parse(max_temp.date).strftime("%b %d")}')
-        print(f'Lowest temperature: {min_temp.min_temp}{self._temp_unit} on {parser.parse(min_temp.date).strftime("%b %d")}')
-        print(f'Fastest wind speed: {fastest_speed.max_wind_speed} on {parser.parse(fastest_speed.date).strftime("%b %d")}')
-        print(f'Slowest mean wind speed: {slowest_speed.mean_wind_speed} on {parser.parse(slowest_speed.date).strftime("%b %d")}')
+        print(
+            f'Highest temperature: {max_temp.max_temp}{self._temp_unit} on {parser.parse(max_temp.date).strftime("%b %d")}')
+        print(
+            f'Lowest temperature: {min_temp.min_temp}{self._temp_unit} on {parser.parse(min_temp.date).strftime("%b %d")}')
+        print(
+            f'Fastest wind speed: {fastest_speed.max_wind_speed} on {parser.parse(fastest_speed.date).strftime("%b %d")}')
+        print(
+            f'Slowest mean wind speed: {slowest_speed.mean_wind_speed} on {parser.parse(slowest_speed.date).strftime("%b %d")}')
 
     def populate_year_month_report(self, weather_man_results):
         avg_highest_temp = weather_man_results['Highest Average']
@@ -242,11 +249,13 @@ class WeatherMan:
         month = str(int(month))
         month_to_search = f'-{month}-'
 
-        check_month_from_monthly_one_chart_readings = any(month_to_search in x.date for x in self.single_chart_monthly_readings)
+        check_month_from_monthly_one_chart_readings = any(
+            month_to_search in x.date for x in self.single_chart_monthly_readings)
         if check_month_from_monthly_one_chart_readings:
             readings = self.single_chart_monthly_readings
         else:
-            readings, reading_files = self.saved_month_from_saved_readings(path, month_to_search, year_month, year, month)
+            readings, reading_files = self.saved_month_from_saved_readings(path, month_to_search, year_month, year,
+                                                                           month)
 
         if reading_files or readings:
             if reading_files:
@@ -281,14 +290,14 @@ arg_parser.add_argument('path', type=weatherman.validate_path,
                         help='Enter weather files directory path containing .csv files')
 arg_parser.add_argument('-e', type=int, default=None,
                         help='(usage: -e yyyy) To see highest temperature and day,'
-                             ' lowest temperature and day, fastest wind speed and day,'
-                             ' slowest mean wind speed and day')
+                             ' lowest temperature and day, fastest wind speed and day'
+                             ' and slowest mean wind speed and day of the given year')
 arg_parser.add_argument('-s', type=str, default=None,
-                        help='(usage: -s yyyy/mm) To see one line horizontal bar charts on the'
-                             ' console for the highest and lowest temperature on each day.')
+                        help='(usage: -s yyyy/mm) To see one line horizontal bar charts on the console for'
+                             ' the highest and lowest temperature on each day of the given month of year.')
 arg_parser.add_argument('-c', type=str, default=None,
-                        help='(usage: -c yyyy/mm) To see two line horizontal bar charts on the'
-                             ' console for the highest and lowest temperature on each day.')
+                        help='(usage: -c yyyy/mm) To see two line horizontal bar charts on the console for'
+                             ' the highest and lowest temperature on each day of the given onth of year.')
 
 input_ = arg_parser.parse_args()
 if input_.e:
