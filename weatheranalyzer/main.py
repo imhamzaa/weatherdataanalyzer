@@ -17,27 +17,30 @@ class TemperatureUnit(enum.Enum):
 
 
 class ChartColor(enum.Enum):
-    BLACK, BLUE, PINK, RED = '\033[1;30m', '\033[1;34m', '\033[1;35m', '\033[1;31m'
+    RESET, BLUE, PINK, RED = '\033[0m', '\033[1;34m', '\033[1;35m', '\033[1;31m'
 
 
 class WeatherModel:
 
-    def __init__(self, reading_line, temp_unit):
+    def __init__(self, reading_line, temp_unit, from_dt_format, to_dt_format):
         max_temp_F, max_temp_C = reading_line['T. Max oF/oC'].split('/')
         min_temp_F, min_temp_C = reading_line['T. Min oF/oC'].split('/')
 
-        self.date = reading_line['Date']
         self.max_temp = float(max_temp_F) if temp_unit == 'F' else float(max_temp_C)
         self.min_temp = float(min_temp_F) if temp_unit == 'F' else float(min_temp_C)
 
         self.mean_wind_speed = float(reading_line['Wind Speed (mph)'])
         self.max_wind_speed = float(reading_line['Max Wind Speed (mph)'])
 
+        self.date = datetime.datetime.strptime(reading_line['Date'], from_dt_format).strftime(to_dt_format)
+
 
 class WeatherMan:
     _temp_unit = 'F'
     _chart_line_style = '*'
     _wind_speed_unit = 'mph'
+    _ds_date_format = '%m/%d/%Y'
+    _req_date_format = '%Y-%m-%d'
 
     def __init__(self):
         self.weather_yearly_readings = []
@@ -50,18 +53,24 @@ class WeatherMan:
     def set_chart_line_style(self, style):
         self._chart_line_style = style
 
+    def set_data_source_date_format(self, _format):
+        self._ds_date_format = _format
+
+    def set_required_date_format(self, _format):
+        self._req_date_format = _format
+
     def validate_path(self, path):
         return path if os.path.isdir(path) else None
 
     def month_to_month_name(self, month):
         current_date = datetime.datetime.now()
-        month = current_date.replace(month=month).strftime('%b')
+        month = current_date.replace(month=int(month)).strftime('%b')
         return month
 
     def read_monthly_files(self, path, year_month):
         year, month = year_month.split('/')
-        month = self.month_to_month_name(int(month))
-        return self.read_weather_files(path, str(year), month)
+        month = self.month_to_month_name(month)
+        return self.read_weather_files(path, year, month)
 
     def read_weather_files(self, path, year, month='*'):
         file_paths = []
@@ -78,7 +87,7 @@ class WeatherMan:
         return monthly_readings
 
     def read_weather_values(self, line, weather_readings):
-        weather = WeatherModel(line, self._temp_unit)
+        weather = WeatherModel(line, self._temp_unit, self._ds_date_format, self._req_date_format)
         weather_readings.append(weather)
 
     def read_weather_file_readings(self, weather_file, weather_readings):
@@ -138,10 +147,10 @@ class WeatherMan:
             day = parser.parse(temperature.date).strftime('%d')
 
             high_temp_point = round(abs(temperature.max_temp))
-            high_temp_value = str(round(temperature.max_temp))
+            high_temp_value = round(temperature.max_temp)
 
             low_temp_point = round(abs(temperature.min_temp))
-            low_temp_value = str(round(temperature.min_temp))
+            low_temp_value = round(temperature.min_temp)
 
             high_temp_line = ChartColor.RED.value + self._chart_line_style * high_temp_point
             low_temp_line = ChartColor.BLUE.value + self._chart_line_style * low_temp_point
@@ -155,10 +164,10 @@ class WeatherMan:
             day = parser.parse(temperature.date).strftime('%d')
 
             high_temp_point = round(abs(temperature.max_temp))
-            high_temp_value = str(round(temperature.max_temp))
+            high_temp_value = round(temperature.max_temp)
 
             low_temp_point = round(abs(temperature.min_temp))
-            low_temp_value = str(round(temperature.min_temp))
+            low_temp_value = round(temperature.min_temp)
 
             high_temp_line = ChartColor.RED.value + self._chart_line_style * high_temp_point
             low_temp_line = ChartColor.BLUE.value + self._chart_line_style * low_temp_point
@@ -168,13 +177,14 @@ class WeatherMan:
             print(
                 f'{ChartColor.PINK.value}{day} {low_temp_line}{ChartColor.PINK.value}{low_temp_value}{self._temp_unit}')
 
-    def populate_year_report(self, weather_man_results):
+    def populate_year_report(self, weather_man_results, year):
 
         max_temp = weather_man_results['HighestTemperature']
         min_temp = weather_man_results['LowestTemperature']
         fastest_speed = weather_man_results['FastestWindSpeed']
         slowest_speed = weather_man_results['SlowestWindSpeed']
 
+        print(f'Yearly report of {year}:-', end='\n\n')
         print(
             f'Highest temperature: {max_temp.max_temp}{self._temp_unit} on {parser.parse(max_temp.date).strftime("%b %d")}')
         print(
@@ -184,29 +194,18 @@ class WeatherMan:
         print(
             f'Slowest mean wind speed: {slowest_speed.mean_wind_speed} on {parser.parse(slowest_speed.date).strftime("%b %d")}')
 
-    def populate_year_month_report(self, weather_man_results):
-        avg_highest_temp = weather_man_results['Highest Average']
-        avg_lowest_temp = weather_man_results['Lowest Average']
-        print(f'Highest Average: {avg_highest_temp}{self._temp_unit}')
-        print(f'Lowest Average: {avg_lowest_temp}{self._temp_unit}')
-
     def populate_one_line_bar_chart_report(self, temperature_readings, year, month):
-        print('One line Bar Chart:-\n')
-        print(f'{month} {year}')
+        print(f'One line Bar Chart for {month} {year}:-\n')
         self.draw_one_line_chart(temperature_readings)
 
     def populate_two_line_bar_chart_report(self, temperature_readings, year, month):
-        print('Two line Bar Chart:-\n')
-        print(f'{month} {year}')
+        # If one-line chart has been drawn, we need to reset color
+        print(f'{ChartColor.RESET.value}Two line Bar Chart for {month} {year}:-\n')
         self.draw_two_line_chart(temperature_readings)
 
     def generate_report(self, weather_man_results, report_type, year='', month=''):
         if report_type == ReportType.YEAR:
-            print('\n\n')
-            self.populate_year_report(weather_man_results)
-        elif report_type == ReportType.YEAR_MONTH:
-            print('\n\n')
-            self.populate_year_month_report(weather_man_results)
+            self.populate_year_report(weather_man_results, year)
         elif report_type == ReportType.Two_Line_Chart:
             print('\n\n')
             self.populate_two_line_bar_chart_report(weather_man_results, year, month)
@@ -215,56 +214,6 @@ class WeatherMan:
             self.populate_one_line_bar_chart_report(weather_man_results, year, month)
         else:
             print('No Report to print')
-
-    def yearly_weather_report(self, path, year):
-        reading_files = self.read_weather_files(path, str(year))
-        if reading_files:
-            readings = self.populate_weather_readings(reading_files)
-            weather_results = self.compute_result(readings, ReportType.YEAR)
-            self.generate_report(weather_results, ReportType.YEAR)
-            self.weather_yearly_readings = readings
-        else:
-            print('Yearly weather readings not exist')
-
-    def one_line_chart_weather_report(self, path, year_month):
-        year, month = year_month.split('/')
-        month = str(int(month))
-        month_to_search = f'-{month}-'
-
-        readings, reading_files = self.saved_month_from_saved_readings(path, month_to_search, year_month, year, month)
-        if reading_files or readings:
-            if reading_files:
-                readings = self.populate_weather_readings(reading_files)
-            weather_results = self.compute_result(readings, ReportType.One_Line_CHART)
-            month = self.month_to_month_name(int(month))
-            self.generate_report(weather_results, ReportType.One_Line_CHART, year, month)
-
-            self.single_chart_monthly_readings = readings
-        else:
-            print('Weather readings not exist')
-
-    def two_line_chart_weather_report(self, path, year_month):
-        reading_files = []
-        year, month = year_month.split('/')
-        month = str(int(month))
-        month_to_search = f'-{month}-'
-
-        check_month_from_monthly_one_chart_readings = any(
-            month_to_search in x.date for x in self.single_chart_monthly_readings)
-        if check_month_from_monthly_one_chart_readings:
-            readings = self.single_chart_monthly_readings
-        else:
-            readings, reading_files = self.saved_month_from_saved_readings(path, month_to_search, year_month, year,
-                                                                           month)
-
-        if reading_files or readings:
-            if reading_files:
-                readings = self.populate_weather_readings(reading_files)
-            weather_results = self.compute_result(readings, ReportType.Two_Line_Chart)
-            month = self.month_to_month_name(int(month))
-            self.generate_report(weather_results, ReportType.Two_Line_Chart, year, month)
-        else:
-            print('Weather readings not exist')
 
     def saved_month_from_saved_readings(self, path, month_to_search, year_month, year, month):
         readings = []
@@ -280,15 +229,68 @@ class WeatherMan:
                 reading_files = self.read_monthly_files(path, year_month)
         return [readings, reading_files]
 
+    def yearly_weather_report(self, path, year):
+        reading_files = self.read_weather_files(path, year)
+        if reading_files:
+            readings = self.populate_weather_readings(reading_files)
+            weather_results = self.compute_result(readings, ReportType.YEAR)
+            self.generate_report(weather_results, ReportType.YEAR, year)
+            self.weather_yearly_readings = readings
+        else:
+            print('Yearly weather readings not exist')
+
+    def one_line_chart_weather_report(self, path, year_month):
+        year, month = year_month.split('/')
+        # To cover cases of month in single/double digit
+        month = month if len(month) == 2 else f'0{month}'
+        month_to_search = f'-{month}-'
+
+        readings, reading_files = self.saved_month_from_saved_readings(path, month_to_search, year_month, year, month)
+        if reading_files or readings:
+            if reading_files:
+                readings = self.populate_weather_readings(reading_files)
+            weather_results = self.compute_result(readings, ReportType.One_Line_CHART)
+            month = self.month_to_month_name(month)
+            self.generate_report(weather_results, ReportType.One_Line_CHART, year, month)
+            self.single_chart_monthly_readings = readings
+        else:
+            print('Weather readings not exist')
+
+    def two_line_chart_weather_report(self, path, year_month):
+        reading_files = []
+        year, month = year_month.split('/')
+        # To cover cases of month in single/double digit
+        month = month if len(month) == 2 else f'0{month}'
+        month_to_search = f'-{month}-'
+
+        check_month_from_monthly_one_chart_readings = any(
+            month_to_search in x.date for x in self.single_chart_monthly_readings)
+        if check_month_from_monthly_one_chart_readings:
+            readings = self.single_chart_monthly_readings
+        else:
+            readings, reading_files = self.saved_month_from_saved_readings(path, month_to_search, year_month, year,
+                                                                           month)
+
+        if reading_files or readings:
+            if reading_files:
+                readings = self.populate_weather_readings(reading_files)
+            weather_results = self.compute_result(readings, ReportType.Two_Line_Chart)
+            month = self.month_to_month_name(month)
+            self.generate_report(weather_results, ReportType.Two_Line_Chart, year, month)
+        else:
+            print('Weather readings not exist')
+
 
 weatherman = WeatherMan()
-weatherman.set_temp_unit(TemperatureUnit.CELSIUS.value)
-weatherman.set_chart_line_style('&')
+weatherman.set_chart_line_style('&')  # OPTIONAL: Set chart line style
+weatherman.set_required_date_format('%Y-%m-%d')  # OPTIONAL: Set required format of date being used in code
+weatherman.set_data_source_date_format('%m/%d/%Y')  # OPTIONAL: Set format of date being used in data source
+weatherman.set_temp_unit(TemperatureUnit.CELSIUS.value)  # OPTIONAL: Set temperature unit being used in code
 
 arg_parser = argparse.ArgumentParser(description='Weatherman data analysis')
 arg_parser.add_argument('path', type=weatherman.validate_path,
                         help='Enter weather files directory path containing .csv files')
-arg_parser.add_argument('-e', type=int, default=None,
+arg_parser.add_argument('-e', type=str, default=None,
                         help='(usage: -e yyyy) To see highest temperature and day,'
                              ' lowest temperature and day, fastest wind speed and day'
                              ' and slowest mean wind speed and day of the given year')

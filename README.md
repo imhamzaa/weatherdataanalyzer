@@ -34,3 +34,5 @@ python main.py PATH_HERE -s 2016/03
 
 python main.py PATH_HERE -c 2016/03
 
+python main.py PATH_HERE -e 2016 -s 2016/3 -c 2016/2
+
